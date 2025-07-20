@@ -1,18 +1,19 @@
-from typing import List
+from typing import List, Any, Coroutine, Sequence
 from datetime import date, timedelta
 
-from sqlalchemy import select, or_, func
+from sqlalchemy import select, or_, func, Row, RowMapping
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.db.models import Contact
+from src.db.models import Contact, User
 from src.schemas import ContactCreate, ContactUpdate
 
 class ContactRepository:
-    def __init__(self, db: AsyncSession):
+    def __init__(self, db: AsyncSession, user:User):
         self.db = db
+        self.user = user
 
-    async def get_all(self, skip: int = 0, limit: int = 100) -> List[Contact]:
-        stmt = select(Contact).offset(skip).limit(limit)
+    async def get_all(self, skip: int = 0, limit: int = 100) -> Sequence[Contact]:
+        stmt = select(Contact).where(Contact.user_id == self.user.id).offset(skip).limit(limit)
         result = await self.db.execute(stmt)
         return result.scalars().all()
 
@@ -42,8 +43,9 @@ class ContactRepository:
             await self.db.commit()
         return contact
 
-    async def search(self, query: str) -> List[Contact]:
+    async def search(self, query: str) -> Sequence[Contact]:
         stmt = select(Contact).where(
+            Contact.user_id == self.user.id).where(
             or_(
                 Contact.first_name.ilike(f"%{query}%"),
                 Contact.last_name.ilike(f"%{query}%"),
@@ -53,10 +55,11 @@ class ContactRepository:
         result = await self.db.execute(stmt)
         return result.scalars().all()
 
-    async def upcoming_birthdays(self) -> List[Contact]:
+    async def upcoming_birthdays(self) -> Sequence[Contact]:
         today = date.today()
         end = today + timedelta(days=7)
         stmt = select(Contact).where(
+            Contact.user_id == self.user.id).where(
             func.date_part('doy', Contact.birthday).between(
                 func.date_part('doy', today),
                 func.date_part('doy', end)

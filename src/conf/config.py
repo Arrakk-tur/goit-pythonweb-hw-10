@@ -4,6 +4,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class Config:
+
+# DB
     DB_HOST = os.getenv("DB_HOST")
     DB_PORT = os.getenv("DB_PORT")
     DB_NAME = os.getenv("DB_NAME")
@@ -13,8 +15,15 @@ class Config:
     DB_URL = (
         f"postgresql+asyncpg://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
     )
+
+# alembic
     SYNC_DB_URL = (
         f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
-    )  # для alembic
+    )
+
+# JWT
+    JWT_SECRET = os.getenv("JWT_SECRET")
+    JWT_ALGORITHM = "HS256"
+    JWT_EXPIRATION_SECONDS = 3600
 
 config = Config()
