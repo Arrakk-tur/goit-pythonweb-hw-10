@@ -3,7 +3,7 @@ from jose import JWTError, jwt
 from fastapi import HTTPException, status, Depends
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
-from datetime import datetime, timedelta, UTC
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from src.conf.config import config
@@ -20,19 +20,12 @@ async def register_user(user: UserCreate, repo: UserRepository) -> User:
     return await repo.create_user(user.email, hashed_password)
 
 
-# JWT
-# def create_access_token(data: dict, expires_delta: timedelta | None = None):
-#     to_encode = data.copy()
-#     expire = datetime.now(UTC) + (expires_delta or timedelta(minutes=15))
-#     to_encode.update({"exp": expire})
-#     return jwt.encode(to_encode, config.JWT_SECRET, algorithm=config.JWT_ALGORITHM)
-
 async def create_access_token(data: dict, expires_delta: Optional[int] = None):
     to_encode = data.copy()
     if expires_delta:
-        expire = datetime.now(UTC) + timedelta(seconds=expires_delta)
+        expire = datetime.now(timezone.utc) + timedelta(seconds=expires_delta)
     else:
-        expire = datetime.now(UTC) + timedelta(seconds=config.JWT_EXPIRATION_SECONDS)
+        expire = datetime.now(timezone.utc) + timedelta(seconds=config.JWT_EXPIRATION_SECONDS)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(
         to_encode, config.JWT_SECRET, algorithm=config.JWT_ALGORITHM
@@ -55,9 +48,3 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession
     if user is None:
         raise credentials_exception
     return user
-
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(plain_password, hashed_password)
-
-def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
